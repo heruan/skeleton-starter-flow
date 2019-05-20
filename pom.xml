@@ -17,9 +17,7 @@
         <failOnMissingWebXml>false</failOnMissingWebXml>
 
         <vaadin.version>14.0.0.beta1</vaadin.version>
-        <rootOutputDir>${project.rootdir}/target</rootOutputDir>
-
-        <plugin.surefire.version>3.0.0-M3</plugin.surefire.version>
+        <drivers.dir>${project.basedir}/drivers</drivers.dir>
     </properties>
 
     <repositories>
@@ -113,7 +111,6 @@
                 <artifactId>jetty-maven-plugin</artifactId>
                 <version>9.4.15.v20190215</version>
                 <configuration>
-                    <scanIntervalSeconds>5</scanIntervalSeconds>
                     <stopPort>8081</stopPort>
                     <stopWait>5</stopWait>
                     <stopKey>${project.artifactId}</stopKey>
@@ -124,8 +121,7 @@
                         </systemProperty>
                         <systemProperty>
                             <name>project.basedir</name>
-<!--                            <value>${project.basedir}</value>-->
-                            <value>${project.rootdir}</value>
+                            <value>${project.basedir}</value>
                         </systemProperty>
                     </systemProperties>
                     <!-- Use war output directory to get the webpack files -->
@@ -172,130 +168,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-surefire-plugin</artifactId>-->
-<!--                <version>${plugin.surefire.version}</version>-->
-<!--                <configuration>-->
-<!--                    <excludes>-->
-<!--                        &lt;!&ndash;-->
-<!--                            TestBench IT tests are excluded from the normal-->
-<!--                            test runs as TestBench requires a pro license-->
-<!--                         &ndash;&gt;-->
-<!--                        <exclude>**/it/**</exclude>-->
-<!--                    </excludes>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
-
-            <plugin>
-                <groupId>org.commonjava.maven.plugins</groupId>
-                <artifactId>directory-maven-plugin</artifactId>
-                <version>0.1</version>
-                <executions>
-                    <execution>
-                        <id>set-root-dir-for-common-lifecycle</id>
-                        <goals>
-                            <goal>highest-basedir</goal>
-                        </goals>
-                        <phase>initialize</phase>
-                        <configuration>
-                            <property>project.rootdir</property>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>set-root-dir-for-clean-lifecycle</id>
-                        <goals>
-                            <goal>highest-basedir</goal>
-                        </goals>
-                        <phase>pre-clean</phase>
-                        <configuration>
-                            <property>project.rootdir</property>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!--
-                Copy webpack compiled stuff to final distributable
-            -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>3.2.2</version>
-            </plugin>
-
-            <plugin>
-                <groupId>com.googlecode.maven-download-plugin</groupId>
-                <artifactId>download-maven-plugin</artifactId>
-                <version>1.3.0</version>
-                <executions>
-                    <execution>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>wget</goal>
-                        </goals>
-                        <configuration>
-                            <url>
-                                https://raw.githubusercontent.com/vaadin/flow/master/drivers.xml
-                            </url>
-                            <outputFileName>drivers.xml</outputFileName>
-                            <outputDirectory>${rootOutputDir}
-                            </outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>com.lazerycode.selenium</groupId>
-                <artifactId>driver-binary-downloader-maven-plugin</artifactId>
-                <version>1.0.17</version>
-                <configuration>
-                    <onlyGetDriversForHostOperatingSystem>true
-                    </onlyGetDriversForHostOperatingSystem>
-                    <rootStandaloneServerDirectory>
-                        ${rootOutputDir}/driver
-                    </rootStandaloneServerDirectory>
-                    <downloadedZipFileDirectory>
-                        ${rootOutputDir}/driver_zips
-                    </downloadedZipFileDirectory>
-                    <customRepositoryMap>
-                        ${rootOutputDir}/drivers.xml
-                    </customRepositoryMap>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>pre-integration-test</phase>
-                        <goals>
-                            <goal>selenium</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Runs the integration tests (*IT) after the server is started -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.20</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <trimStackTrace>false</trimStackTrace>
-                    <enableAssertions>true</enableAssertions>
-                    <systemPropertyVariables>
-                        <!-- Pass location of downloaded webdrivers to the tests -->
-                        <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
@@ -327,15 +199,56 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>${plugin.surefire.version}</version>
+                        <version>3.0.0-M3</version>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>com.lazerycode.selenium</groupId>
+                        <artifactId>driver-binary-downloader-maven-plugin</artifactId>
+                        <version>1.0.17</version>
                         <configuration>
-                            <includes>
-                                <!--
-                                    TestBench IT tests are added back, when
-                                    running with this profile
-                                -->
-                                <include>**/it/**</include>
-                            </includes>
+                            <onlyGetDriversForHostOperatingSystem>true
+                            </onlyGetDriversForHostOperatingSystem>
+                            <rootStandaloneServerDirectory>
+                                ${drivers.dir}/driver
+                            </rootStandaloneServerDirectory>
+                            <downloadedZipFileDirectory>
+                                ${drivers.dir}/driver_zips
+                            </downloadedZipFileDirectory>
+                            <customRepositoryMap>
+                                ${project.basedir}/drivers.xml
+                            </customRepositoryMap>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>selenium</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Runs the integration tests (*IT) after the server is started -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>2.20</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <trimStackTrace>false</trimStackTrace>
+                            <enableAssertions>true</enableAssertions>
+                            <systemPropertyVariables>
+                                <!-- Pass location of downloaded webdrivers to the tests -->
+                                <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>
