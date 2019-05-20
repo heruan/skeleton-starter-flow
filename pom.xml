@@ -197,12 +197,6 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>3.0.0-M3</version>
-                    </plugin>
-
-                    <plugin>
                         <groupId>com.lazerycode.selenium</groupId>
                         <artifactId>driver-binary-downloader-maven-plugin</artifactId>
                         <version>1.0.17</version>
@@ -215,9 +209,6 @@
                             <downloadedZipFileDirectory>
                                 ${drivers.dir}/driver_zips
                             </downloadedZipFileDirectory>
-                            <customRepositoryMap>
-                                ${project.basedir}/drivers.xml
-                            </customRepositoryMap>
                         </configuration>
                         <executions>
                             <execution>
