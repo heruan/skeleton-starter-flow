@@ -1,53 +1,40 @@
 package com.vaadin.starter.skeleton.it;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Enumeration;
-import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
+import com.vaadin.testbench.ScreenshotOnFailureRule;
 import com.vaadin.testbench.TestBench;
 import com.vaadin.testbench.parallel.ParallelTest;
 
 public abstract class VaadinIT extends ParallelTest {
     private static final String USE_HUB_PROPERTY = "test.use.hub";
-    private static final String WEBDRIVER_CHROME_DRIVER = "webdriver.chrome.driver";
-    private static final String CHROMEDRIVER_NAME_PART = "chromedriver";
-    // examples: driver\windows\googlechrome\64bit\chromedriver.exe
-    private static final int MAX_DRIVER_SEARCH_DEPTH = 4;
 
     public static final String SERVER_PORT_PROPERTY_KEY = "serverPort";
     private static final int SERVER_PORT = Integer.parseInt(
             System.getProperty(SERVER_PORT_PROPERTY_KEY, "8080"));
 
-    @BeforeClass
-    public static void setChromeDriverPath() {
-        fillEnvironmentProperty();
-    }
+    @Rule
+    public ScreenshotOnFailureRule rule = new ScreenshotOnFailureRule(this,
+            true);
 
     @Before
     public void setup() throws Exception {
-        if (VaadinIT.runningInCI()) {
-            VaadinIT.setUsingHub();
+        if (isUsingHub()) {
             super.setup();
         } else {
-            setDriver(VaadinIT.createHeadlessChromeDriver());
+            setDriver(createHeadlessChromeDriver());
         }
+
     }
 
     public void open() {
@@ -60,73 +47,10 @@ public abstract class VaadinIT extends ParallelTest {
         getDriver().get(url);
     }
 
-    public static WebDriver createHeadlessChromeDriver() {
+    private static WebDriver createHeadlessChromeDriver() {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless", "--disable-gpu");
         return TestBench.createDriver(new ChromeDriver(options));
-    }
-
-    private static void fillEnvironmentProperty() {
-        if (System.getProperty(WEBDRIVER_CHROME_DRIVER) == null) {
-            Optional.ofNullable(getDriverLocation())
-                    .ifPresent(driverLocation -> System.setProperty(
-                            WEBDRIVER_CHROME_DRIVER, driverLocation));
-        }
-    }
-
-    private static String getDriverLocation() {
-        Path driverDirectory = Paths.get("../../driver/");
-        if (!driverDirectory.toFile().isDirectory()) {
-            System.out.println(String.format(
-                    "Could not find driver directory: %s", driverDirectory));
-            return null;
-        }
-
-        List<Path> driverPaths = getDriverPaths(driverDirectory);
-
-        if (driverPaths.isEmpty()) {
-            System.out.println("No " + CHROMEDRIVER_NAME_PART + " found at \""
-                    + driverDirectory.toAbsolutePath() + "\"\n"
-                    + "  Verify that the path is correct and that driver-binary-downloader-maven-plugin has been run at least once.");
-            return null;
-        }
-
-        if (driverPaths.size() > 1) {
-            System.out.println(String.format(
-                    "Have found multiple driver paths, using the first one from the list: %s",
-                    driverPaths));
-        }
-        return driverPaths.get(0).toAbsolutePath().toString();
-
-    }
-
-    private static List<Path> getDriverPaths(Path driverDirectory) {
-        List<Path> driverPaths;
-        try {
-            driverPaths = Files
-                    .find(driverDirectory, MAX_DRIVER_SEARCH_DEPTH,
-                            VaadinIT::isChromeDriver)
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new UncheckedIOException("Error trying to locate "
-                    + CHROMEDRIVER_NAME_PART + " binary", e);
-        }
-        return driverPaths;
-    }
-
-    private static boolean isChromeDriver(Path path,
-                                          BasicFileAttributes attributes) {
-        return attributes.isRegularFile()
-                && path.toString().toLowerCase(Locale.getDefault())
-                .contains(CHROMEDRIVER_NAME_PART);
-    }
-
-    private static boolean runningInCI() {
-        return System.getenv("TEAMCITY_SERVER") != null;
-    }
-
-    private static void setUsingHub() {
-        System.setProperty("test.use.hub", Boolean.TRUE.toString());
     }
 
     private static boolean isUsingHub() {
